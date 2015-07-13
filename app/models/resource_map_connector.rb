@@ -44,11 +44,11 @@ class ResourceMapConnector < Connector
     end
 
     def collections(user)
-      GuissoRestClient.new(connector, user).get("#{connector.url}/api/collections.json")
+      GuissoRestClient.new(connector, user).get("#{connector.url}/api/v2/collections.json")
     end
 
     def collection(id, user)
-      GuissoRestClient.new(connector, user).get("#{connector.url}/api/collections/#{id}.json")
+      GuissoRestClient.new(connector, user).get("#{connector.url}/api/v2/collections/#{id}.json")
     end
 
     def entity(collection)
@@ -114,7 +114,7 @@ class ResourceMapConnector < Connector
     end
 
     def entity_properties(context)
-      layers = GuissoRestClient.new(connector, context.user).get("#{connector.url}/api/collections/#{@parent.id}/layers.json")
+      layers = GuissoRestClient.new(connector, context.user).get("#{connector.url}/api/v2/collections/#{@parent.id}/layers.json")
       {
         id: SimpleProperty.integer("ID"),
         name: SimpleProperty.string("Name"),
@@ -146,7 +146,7 @@ class ResourceMapConnector < Connector
       page = (options[:page] || 1).to_i
       sites = internal_query(filters, context, page)
 
-      layers = GuissoRestClient.new(connector, context.user).get("#{connector.url}/api/collections/#{@parent.id}/layers.json")
+      layers = GuissoRestClient.new(connector, context.user).get("#{connector.url}/api/v2/collections/#{@parent.id}/layers.json")
       layers_by_field_code = index_layers_by_field_code(layers)
 
       items = sites_to_ui(sites["sites"], layers_by_field_code)
@@ -158,14 +158,14 @@ class ResourceMapConnector < Connector
 
     def insert(properties, context)
       GuissoRestClient.new(connector, context.user).
-        post("#{connector.url}/api/collections/#{@parent.id}/sites.json",
+        post("#{connector.url}/api/v2/collections/#{@parent.id}/sites.json",
           site: properties_as_site_json(properties).to_json)
     end
 
     def update(filters, properties, context)
       for_each_site_id(filters, context) do |id|
         GuissoRestClient.new(connector, context.user).
-          post("#{connector.url}/api/sites/#{id}/partial_update.json",
+          post("#{connector.url}/api/v2/sites/#{id}/partial_update.json",
             site: properties_as_site_json(properties).to_json)
       end
     end
@@ -173,7 +173,7 @@ class ResourceMapConnector < Connector
     def delete(filters, context)
       for_each_site_id(filters, context) do |id|
         GuissoRestClient.new(connector, context.user).
-          delete("#{connector.url}/api/sites/#{id}.json")
+          delete("#{connector.url}/api/v2/sites/#{id}.json")
       end
     end
 
@@ -308,7 +308,7 @@ class ResourceMapConnector < Connector
       end
 
       GuissoRestClient.new(connector, context.user).
-        get("#{connector.url}/api/collections/#{@parent.id}.json#{url_query}")
+        get("#{connector.url}/api/v2/collections/#{@parent.id}.json#{url_query}")
     end
 
     def has_more_pages?(sites, page)
