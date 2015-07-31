@@ -148,7 +148,7 @@ class DHISConnector < Connector
         periods.each do |period|
           dataValues = period["dataValues"]
           if dataValues
-            record = initial_form_data(organisation_unit).merge({"period" => period["period"]})
+            record = initial_form_data(organisation_unit).merge({"dataset" => json_response["label"], "period" => period["period"]})
             dataValues.each do |dataValue|
               record = process_data dataValue, form["groups"][0]["fields"], "", record
               record["id"] = dataValue["id"]
@@ -196,6 +196,7 @@ class DHISConnector < Connector
       args = type_children(form, form["groups"][0]["fields"])
 
       # append manual params
+      args["dataset"] = {type: :string}
       args["period"] = {type: :string}
       args["organisation"] = {type: :string}
       args["lat"] = {type: :float}
