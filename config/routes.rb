@@ -34,6 +34,9 @@ Rails.application.routes.draw do
     post 'notify/connectors/:id/*path'=> 'api#notify', format: false
     post 'invoke/connectors/:id/*path' => 'api#invoke', format: false
     post 'callback/connectors/:id/*path' => 'api#callback', format: false
+
+    # dhis
+    post 'tasks/:name' => 'api#notify_task'
   end
 
   resources :event_handlers

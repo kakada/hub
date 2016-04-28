@@ -26,7 +26,7 @@ class GuissoRestClient
         raise HttpError.new response
       end
     else
-      rest_client_resource(url).post(body) {|response, request, result| response }
+      rest_client_resource(url).post(body, content_type: :json, accept: :json) {|response, request, result| response }
     end
   end
 

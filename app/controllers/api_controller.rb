@@ -103,6 +103,13 @@ class ApiController < ApplicationController
     render json: response
   end
 
+  # POST /api/tasks/:name
+  def notify_task
+    third_party_notifies params[:name]
+
+    render json: {}, status: :ok
+  end
+
   def callback
     callback_connector = Connector.find_by_guid params[:id]
     callback_connector.callback(request_context, params[:path], request)
@@ -136,6 +143,16 @@ class ApiController < ApplicationController
           false
         end
       end
+    end
+  end
+
+  def third_party_notifies task_name
+    raw_post = request.raw_post || "{}"
+    body = JSON.parse raw_post
+
+    subscribed_events = current_user.event_handlers.where(name: task_name)
+    subscribed_events.each do |event_handler|
+      event_handler.trigger(body)
     end
   end
 end

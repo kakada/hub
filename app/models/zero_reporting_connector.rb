@@ -119,10 +119,10 @@ class ZeroReportingConnector < Connector
       args = type_children(form['reports'])
 
       # append manual params
-      args["dataSet"] = {type: :string}
-      args["orgUnit"] = {type: :string}
-      args["period"] = {type: :string}
-      args["completeDate"] = {type: :string}
+      args["dataSet"] = {label: "DataSet", type: :string}
+      args["orgUnit"] = {label: "Organization Unit", type: :string}
+      args["period"] = {label: "Period", type: :string}
+      args["completeDate"] = {label: "Complete Date", type: :string}
 
       args
     end
@@ -152,10 +152,10 @@ class ZeroReportingConnector < Connector
         when "NUMBER"
           {type: :float}
         else
-          {type: :string}
+          {type: :string, label: c["name"]}
         end
 
-        args[c["name"]] = type
+        args[c["dhis2_data_element_uuid"]] = type
       end
 
       args
