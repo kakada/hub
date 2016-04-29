@@ -90,10 +90,9 @@ class DHISConnector < Connector
       entry["completeDate"] =  properties["completeDate"] if properties["completeDate"].present?
 
       entry["dataValues"] = []
-
       
       properties["dataValues"].each do |k, v|
-        data_element = {dataElement: k, value: v}
+        data_element = {dataElement: k, value: v.is_a?(String) ? v : "" }
         entry["dataValues"].push(data_element)
       end if properties["dataValues"]
 
