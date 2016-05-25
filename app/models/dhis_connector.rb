@@ -19,8 +19,8 @@ class DHISConnector < Connector
   end
 
   def get(relative_uri)
-    url = "#{self.url}/api/#{relative_uri}"
-    RestClient::Resource.new(url, self.username, self.password).get
+    uri = URI.join(self.url, 'api', relative_uri)
+    RestClient::Resource.new(uri.to_s, self.username, self.password).get
   end
 
   def get_json(relative_uri)
@@ -54,7 +54,8 @@ class DHISConnector < Connector
     end
 
     def entity_properties(context)
-      diseases = GuissoRestClient.new(connector, context.user).get("#{connector.url}/api/dataSets/QnF4A5MHk4t/form.json")
+      uri = URI.join(connector.url, 'api/dataSets/QnF4A5MHk4t/form.json')
+      diseases = GuissoRestClient.new(connector, context.user).get(uri.to_s)
       {
         dataSet: SimpleProperty.string("DataSet"),
         orgUnit: SimpleProperty.string("OrgUnit"),
@@ -76,12 +77,16 @@ class DHISConnector < Connector
     end
 
     def insert(properties, context)
-      uri = URI.join(connector.url, 'dhis/api/dataValueSets.json')
+      dataset_form_uri = URI.join(connector.url, 'api/dataSets/QnF4A5MHk4t/form.json')
+      form = GuissoRestClient.new(connector, context.user).get(dataset_form_uri.to_s)
+      disease_fields = form["groups"][0]["fields"] rescue []
+
+      submit_form_uri = URI.join(connector.url, 'api/dataValueSets.json')
       GuissoRestClient.new(connector, context.user).
-        post(uri.to_s, properties_as_entry_json(properties).to_json)
+        post(submit_form_uri.to_s, properties_as_entry_json(disease_fields, properties).to_json)
     end
 
-    def properties_as_entry_json(properties)
+    def properties_as_entry_json(disease_fields, properties)
       entry = {}
 
       entry["dataSet"] = properties["dataSet"] if properties["dataSet"].present?
@@ -91,10 +96,16 @@ class DHISConnector < Connector
 
       entry["dataValues"] = []
       
-      properties["dataValues"].each do |k, v|
-        data_element = {dataElement: k, value: v.is_a?(String) ? v : "" }
+      disease_fields.each do |field|
+        if properties["dataValues"] && properties["dataValues"].include?(field["dataElement"])
+          value = properties["dataValues"][field["dataElement"]]
+          data_element = { dataElement: field["dataElement"], value: value.is_a?(String) ? value : "0" } # empty will map as Hash
+        else
+          data_element = { dataElement: field["dataElement"], value: "0" }
+        end
+
         entry["dataValues"].push(data_element)
-      end if properties["dataValues"]
+      end
 
       entry
     end
