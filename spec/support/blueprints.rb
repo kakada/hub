@@ -56,6 +56,11 @@ ResourceMapConnector.blueprint do
   user
 end
 
+DHISConnector.blueprint do
+  name { "Connector #{sn}" }
+  user
+end
+
 EventHandler.blueprint do
   connector
   event { 'info/$events/new_data'}

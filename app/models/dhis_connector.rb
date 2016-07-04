@@ -15,7 +15,7 @@ class DHISConnector < Connector
   end
 
   def properties(context)
-    {"dataSets" => Entries.new(self)}
+    {"dataSets" => DataSets.new(self)}
   end
 
   def get(relative_uri)
@@ -30,11 +30,88 @@ class DHISConnector < Connector
   private
 
   def initialize_defaults
-    self.url = "https://apps.dhis2.org/demo" unless self.url
+    self.url = "https://apps.dhis2.org/demo/" unless self.url
   end
 
-  class Entries
+  class DataSets
     include EntitySet
+
+    def initialize(parent)
+      @parent = parent
+    end
+
+    def path
+      "dataSets"
+    end
+
+    def label
+      "Data Set"
+    end
+
+    def query(filters, context, options)
+      items = data_sets(context.user)
+      items = items.map { |data_set| entity(data_set) }
+      {items: items}
+    end
+
+    def find_entity(id, context)
+      DataSet.new(self, id, nil, context.user)
+    end
+
+    def data_sets(user)
+      uri = URI.join(connector.url, "api/dataSets.json")
+      GuissoRestClient.new(connector, user).get(uri.to_s)["dataSets"] || []
+    end
+
+    def data_set(id, user)
+      uri = URI.join(connector.url, "api/dataSets/#{id}.json")
+      GuissoRestClient.new(connector, user).get(uri.to_s)
+    end
+
+    def entity(data_set)
+      DataSet.new(self, data_set["id"], data_set["name"])
+    end
+  end
+
+  class DataSet
+    include Entity
+    attr_reader :id
+
+    def initialize(parent, id, name = nil, user = nil)
+      @parent = parent
+      @id = id
+      @label = name
+      @user = user
+    end
+
+    def sub_path
+      id
+    end
+
+    def label(user = nil)
+      @label ||= data_set(user || @user)["name"]
+    end
+
+    def properties(context)
+      {
+        "id" => SimpleProperty.id(@id),
+        "name" => SimpleProperty.name(label(context.user)),
+        "form" => Forms.new(self),
+      }
+    end
+
+    def data_set_id
+      @id
+    end
+
+    def data_set(user)
+      @data_set ||= parent.data_sets(user).find { |item| item["id"].to_s == id.to_s }
+    end
+  end
+
+  class Forms
+    include EntitySet
+    delegate :data_set_id, to: :@parent
 
     protocol :insert
 
@@ -47,14 +124,14 @@ class DHISConnector < Connector
     end
 
     def path
-      "dataSets"
+      "#{@parent.path}/form"
     end
 
     def reflect_entities(context)
     end
 
     def entity_properties(context)
-      uri = URI.join(connector.url, 'api/dataSets/QnF4A5MHk4t/form.json')
+      uri = URI.join(connector.url, "api/dataSets/#{@parent.id}/form.json")
       diseases = GuissoRestClient.new(connector, context.user).get(uri.to_s)
       {
         dataSet: SimpleProperty.string("DataSet"),
@@ -77,7 +154,7 @@ class DHISConnector < Connector
     end
 
     def insert(properties, context)
-      dataset_form_uri = URI.join(connector.url, 'api/dataSets/QnF4A5MHk4t/form.json')
+      dataset_form_uri = URI.join(connector.url, "api/dataSets/#{@parent.id}/form.json")
       form = GuissoRestClient.new(connector, context.user).get(dataset_form_uri.to_s)
       disease_fields = form["groups"][0]["fields"] rescue []
 
@@ -109,7 +186,6 @@ class DHISConnector < Connector
 
       entry
     end
-
   end
 
 end
