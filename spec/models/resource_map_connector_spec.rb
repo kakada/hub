@@ -34,7 +34,7 @@ describe ResourceMapConnector do
     end
 
     it "lists collections" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(status: 200, body: %([
           {
             "id": 495,
@@ -61,7 +61,7 @@ describe ResourceMapConnector do
     end
 
     it "reflects on collection" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(:status => 200, :body => %([{
             "id": 495,
             "name": "my collection"
@@ -94,13 +94,13 @@ describe ResourceMapConnector do
     end
 
     it "reflects on sites" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(:status => 200, :body => %([{
             "id": 495,
             "name": "my collection"
         }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/layers.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/layers.json").
         to_return(:status => 200, :body => %([
           {
             "id": 123,
@@ -172,13 +172,13 @@ describe ResourceMapConnector do
     end
 
     it "executes insert site action" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(:status => 200, :body => %([{
             "id": 495,
             "name": "my collection"
         }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/layers.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/layers.json").
         to_return(:status => 200, :body => %([
           {
             "id": 123,
@@ -193,7 +193,7 @@ describe ResourceMapConnector do
             ]
           }]))
 
-      stub_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/sites.json").
+      stub_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/sites.json").
          with(:body => {"site"=> %({"name":"New site","lat":12.34,"lng":56.78,"properties":{"field_code":"New value"}})},
               :headers => {'Content-Type'=>'application/x-www-form-urlencoded'}).
          to_return(:status => 200, :body => "")
@@ -210,20 +210,20 @@ describe ResourceMapConnector do
         }
       }, context)
 
-      expect(a_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/sites.json").
+      expect(a_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/sites.json").
          with(:body => {"site"=> %({"name":"New site","lat":12.34,"lng":56.78,"properties":{"field_code":"New value"}})},
               :headers => {'Content-Type'=>'application/x-www-form-urlencoded'})
          ).to have_been_made
     end
 
     it "executes query site action" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(:status => 200, :body => %([{
             "id": 495,
             "name": "my collection"
         }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/layers.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/layers.json").
         to_return(:status => 200, :body => %([
           {
             "id": 123,
@@ -238,7 +238,7 @@ describe ResourceMapConnector do
             ]
           }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495.json?name=#{CGI.escape "New site"}&lat=12.34&lng=56.78&field_code=#{CGI.escape "Some value"}").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495.json?name=#{CGI.escape "New site"}&lat=12.34&lng=56.78&field_code=#{CGI.escape "Some value"}").
          to_return(:status => 200, :body => %(
             {
               "name": "Hub collection",
@@ -286,13 +286,13 @@ describe ResourceMapConnector do
     end
 
     it "executes update site action" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(:status => 200, :body => %([{
             "id": 495,
             "name": "my collection"
         }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/layers.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/layers.json").
         to_return(:status => 200, :body => %([
           {
             "id": 123,
@@ -307,7 +307,7 @@ describe ResourceMapConnector do
             ]
           }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495.json?field_code=#{CGI.escape "Some value"}").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495.json?field_code=#{CGI.escape "Some value"}").
          to_return(:status => 200, :body => %(
             {
               "name": "Hub collection",
@@ -329,7 +329,7 @@ describe ResourceMapConnector do
             }
           ))
 
-      stub_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/sites/1234/partial_update.json").
+      stub_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/v2/sites/1234/partial_update.json").
          with(:body => {"site"=> %({"properties":{"field_code":"Some other value"}})},
               :headers => {'Content-Type'=>'application/x-www-form-urlencoded'}).
          to_return(:status => 200, :body => "")
@@ -352,20 +352,20 @@ describe ResourceMapConnector do
         },
         context)
 
-      expect(a_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/sites/1234/partial_update.json").
+      expect(a_request(:post, "https://jdoe:1234@resourcemap.instedd.org/api/v2/sites/1234/partial_update.json").
          with(:body => {"site"=> %({"properties":{"field_code":"Some other value"}})},
               :headers => {'Content-Type'=>'application/x-www-form-urlencoded'})
          ).to have_been_made
     end
 
     it "executes delete site action" do
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections.json").
         to_return(:status => 200, :body => %([{
             "id": 495,
             "name": "my collection"
         }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495/layers.json").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495/layers.json").
         to_return(:status => 200, :body => %([
           {
             "id": 123,
@@ -380,7 +380,7 @@ describe ResourceMapConnector do
             ]
           }]))
 
-      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/collections/495.json?field_code=#{CGI.escape "Some value"}").
+      stub_request(:get, "https://jdoe:1234@resourcemap.instedd.org/api/v2/collections/495.json?field_code=#{CGI.escape "Some value"}").
          to_return(:status => 200, :body => %(
             {
               "name": "Hub collection",
@@ -402,7 +402,7 @@ describe ResourceMapConnector do
             }
           ))
 
-      stub_request(:delete, "https://jdoe:1234@resourcemap.instedd.org/api/sites/1234.json").
+      stub_request(:delete, "https://jdoe:1234@resourcemap.instedd.org/api/v2/sites/1234.json").
          to_return(:status => 200, :body => "")
 
       sites = connector.lookup %w(collections 495 sites), context
@@ -416,7 +416,7 @@ describe ResourceMapConnector do
         },
         context)
 
-      expect(a_request(:delete, "https://jdoe:1234@resourcemap.instedd.org/api/sites/1234.json")
+      expect(a_request(:delete, "https://jdoe:1234@resourcemap.instedd.org/api/v2/sites/1234.json")
          ).to have_been_made
     end
   end
