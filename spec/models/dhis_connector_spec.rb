@@ -188,7 +188,6 @@ describe DHISConnector do
 
       form = connector.lookup %w(dataSets 495 form), context
       form.insert({
-        "dataSet" => "495",
         "orgUnit" => "9999",
         "period" => "2016W1",
         "completeDate" => "20160101",

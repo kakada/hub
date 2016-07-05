@@ -166,7 +166,7 @@ class DHISConnector < Connector
     def properties_as_entry_json(disease_fields, properties)
       entry = {}
 
-      entry["dataSet"] = properties["dataSet"] if properties["dataSet"].present?
+      entry["dataSet"] = data_set_id
       entry["orgUnit"] = properties["orgUnit"] if properties["orgUnit"].present?
       entry["period"] = properties["period"] if properties["period"].present?
       entry["completeDate"] =  properties["completeDate"] if properties["completeDate"].present?
