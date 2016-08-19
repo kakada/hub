@@ -411,7 +411,7 @@ describe VerboiceConnector do
           phone_book.insert({"address" => "12345", "foo" => "bar"}, context)
 
           expect(a_request(:post, "https://jdoe:1234@verboice.instedd.org/api/projects/495/contacts.json").
-                 with(:body => {:address => '12345', :vars => {:foo => "bar"}})).to have_been_made
+                 with(:body => {:address => '12345', :vars => {:foo => "bar"}}, :headers => {'Content-Type'=>'application/json'})).to have_been_made
         end
       end
 
