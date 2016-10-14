@@ -10,8 +10,8 @@ class ZeroReportingConnector < Connector
     "Zero Reporting"
   end
 
-  def has_event?
-    true
+  def has_actions?
+    false
   end
 
   def properties(context)
@@ -115,7 +115,7 @@ class ZeroReportingConnector < Connector
 
     def args(context)
       form = connector.get_json "api/hub/reports/#{@parent.id}.json"
-      
+
       args = type_children(form['reports'])
 
       # append manual params
