@@ -225,13 +225,13 @@ class ResourceMapConnector < Connector
       case field["kind"]
       when "numeric"
         if field["config"] && field["config"]["allows_decimals"]
-          h[:kind] = :float
+          h[:type] = :float
         else
-          h[:kind] = :integer
+          h[:type] = :integer
         end
       # TODO: missing select one, select many and hierarchy fields
       else
-        h[:kind]= :string
+        h[:type]= :string
       end
       h
     end
