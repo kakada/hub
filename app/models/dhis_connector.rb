@@ -10,7 +10,7 @@ class DHISConnector < Connector
     "DHIS"
   end
 
-  def has_event?
+  def has_events?
     false
   end
 
@@ -172,7 +172,7 @@ class DHISConnector < Connector
       entry["completeDate"] =  properties["completeDate"] if properties["completeDate"].present?
 
       entry["dataValues"] = []
-      
+
       disease_fields.each do |field|
         if properties["dataValues"] && properties["dataValues"].include?(field["dataElement"])
           value = properties["dataValues"][field["dataElement"]]
