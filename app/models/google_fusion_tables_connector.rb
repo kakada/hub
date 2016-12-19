@@ -11,10 +11,6 @@ class GoogleFusionTablesConnector < Connector
     {"tables" => Tables.new(self)}
   end
 
-  def has_events?
-    false
-  end
-
   def needs_authorization?
     true
   end
@@ -177,6 +173,10 @@ class GoogleFusionTablesConnector < Connector
       end]
     end
 
+    def columns
+      @columns || []
+    end
+
     def column_names
       @columns.map {|c| c["name"]}
     end
@@ -185,7 +185,7 @@ class GoogleFusionTablesConnector < Connector
       # Rows are not displayed during reflection
     end
 
-    def generate_query_url(filters, fields='all')
+    def generate_query_url(filters, fields='all', offset=nil)
       conditions = []
       filters.keys.each do |key|
         conditions << "'#{key}'='#{filters[key].to_s}'"
@@ -200,9 +200,10 @@ class GoogleFusionTablesConnector < Connector
         sql << " WHERE #{conditions.join(" AND ")}"
       end
 
+      sql << " OFFSET #{offset} " if offset
+
       "https://www.googleapis.com/fusiontables/v2/query?#{{sql: sql}.to_query}"
     end
-
 
     def query(filters, context, options)
       results = connector.get generate_query_url(filters)
@@ -250,6 +251,12 @@ class GoogleFusionTablesConnector < Connector
         end
       end
     end
+
+    def events
+      {
+        "new_data" => NewDataEvent.new(self)
+      }
+    end
   end
 
   class Row
@@ -264,7 +271,80 @@ class GoogleFusionTablesConnector < Connector
     end
 
     def properties(context)
-      Hash[parent.column_names.map { |c| [c, @row[c]] }]
+      # due to Entity#raw, the returned hash needs to have simple propeties as values
+      props = parent.entity_properties(context).deep_dup
+      Hash[parent.column_names.map { |c|
+        p = props[c]
+        p.value = @row[c]
+        [c, p]
+      }]
+    end
+  end
+
+  class NewDataEvent
+    include Event
+
+    def initialize(parent)
+      @parent = parent
+    end
+
+    def subscribe(*)
+      handler = super
+      poll unless load_state
+      handler
+    end
+
+    def label
+      "New data"
+    end
+
+    def sub_path
+      "new_data"
+    end
+
+    def poll
+      max_id = load_state || 0
+      all_data = connector.get(parent.generate_query_url({}, 'all', max_id))["rows"] || []
+      form = form parent.columns
+
+      events = all_data.map { |data| process_data(data, form) }
+
+      return [] if events.empty?
+
+      max_id = "#{max_id.to_i + events.size}"
+      save_state(max_id)
+      events
+    end
+
+    def process_data(data, form, output = {})
+      form.each do |k, v|
+        column_index = parent.columns.select { |c| c if c['name'] === k }.first['columnId']
+        output[k] = data[column_index]
+      end
+      output
+    end
+
+    def args(context)
+      form parent.columns
+    end
+
+    def form columns
+      Hash[columns.map do |c|
+        label = c["name"]
+
+        property_type = case c["type"]
+          when "DATETIME"
+            SimpleProperty.datetime(label)
+          when "LOCATION"
+            SimpleProperty.location(label)
+          when "NUMBER"
+            SimpleProperty.numeric(label)
+          when "STRING"
+            SimpleProperty.string(label)
+        end
+
+        [label, property_type]
+      end]
     end
   end
 end
