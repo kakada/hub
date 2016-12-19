@@ -107,7 +107,8 @@ class Connector < ActiveRecord::Base
           events = connector.lookup_path(event_path, RequestContext.new(user)).poll
           events.each do |event|
             handlers.each do |handler|
-              PoirotRails::Activity.start("polling_event", event: event, handler_id: handler.id, user_id: handler.user_id, connector_id: connector_id, handled_event: handler.event, url: connector.url) do
+              connector_url = connector.type.include?('Google') ? connector.type : connector.url
+              PoirotRails::Activity.start("polling_event", event: event, handler_id: handler.id, user_id: handler.user_id, connector_id: connector_id, handled_event: handler.event, url: connector_url) do
                 handler.trigger event
               end
             end

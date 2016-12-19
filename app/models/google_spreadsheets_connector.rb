@@ -7,10 +7,6 @@ class GoogleSpreadsheetsConnector < Connector
   validates_presence_of :refresh_token
   validates_presence_of :expires_at
 
-  def has_events?
-    false
-  end
-
   def label
     "Spreadsheets"
   end
@@ -237,6 +233,16 @@ class GoogleSpreadsheetsConnector < Connector
     def headers
       worksheet.list.keys
     end
+
+    def rows(skip=1) # skip headers
+      worksheet.rows(skip)
+    end
+
+    def events
+      {
+        "new_data" => NewDataEvent.new(self)
+      }
+    end
   end
 
   class Row
@@ -249,6 +255,58 @@ class GoogleSpreadsheetsConnector < Connector
 
     def properties(context)
       Hash[parent.headers.map { |h| [h, SimpleProperty.string(h, @row[h])] }]
+    end
+  end
+
+  class NewDataEvent
+    include Event
+
+    def initialize(parent)
+      @parent = parent
+    end
+
+    def subscribe(*)
+      handler = super
+      poll unless load_state
+      handler
+    end
+
+    def label
+      "New data"
+    end
+
+    def sub_path
+      "new_data"
+    end
+
+    def poll
+      max_id = load_state || 1 # skip row headers
+      all_data = parent.rows(max_id.to_i)
+      form = form parent.headers
+
+      events = all_data.map { |data| process_data(data, form) }
+
+      return [] if events.empty?
+
+      max_id = "#{max_id.to_i + events.size}"
+      save_state(max_id)
+      events
+    end
+
+    def process_data(data, form, output = {})
+      form.each do |k, v|
+        column_index = parent.headers.index(k)
+        output[k] = data[column_index]
+      end
+      output
+    end
+
+    def args(context)
+      form parent.headers
+    end
+
+    def form headers
+      Hash[headers.map { |h| [h, SimpleProperty.string(h)] }]
     end
   end
 end
