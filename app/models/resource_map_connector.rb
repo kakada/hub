@@ -8,10 +8,6 @@ class ResourceMapConnector < Connector
     {"collections" => Collections.new(self)}
   end
 
-  def has_events?
-    false
-  end
-
   private
 
   def initialize_defaults
@@ -89,6 +85,10 @@ class ResourceMapConnector < Connector
 
     def collection(user)
       @collection ||= parent.collections(user).find { |col| col["id"].to_s == id.to_s }
+    end
+
+    def user
+      @user
     end
   end
 
@@ -224,7 +224,7 @@ class ResourceMapConnector < Connector
       h[:label] = field["name"]
       case field["kind"]
       when "numeric"
-        if field["config"] && field["config"]["allows_decimals"]
+        if field["config"] && field["config"]["allows_decimals"] == 'true'
           h[:type] = :float
         else
           h[:type] = :integer
@@ -315,5 +315,108 @@ class ResourceMapConnector < Connector
       total = sites["count"]
       total > page * 50
     end
+
+    def events
+      {
+        "new_data" => NewDataEvent.new(self)
+      }
+    end
   end
+
+  class NewDataEvent
+    include Event
+
+    def initialize(parent)
+      @parent = parent
+    end
+
+    def subscribe(*)
+      handler = super
+      poll unless load_state
+      handler
+    end
+
+    def label
+      "New data"
+    end
+
+    def sub_path
+      "new_data"
+    end
+
+    def poll
+      max_id = load_state
+      url = "#{connector.url}/api/v2/collections/#{parent.collection_id}/sites/feed.json"
+      url << %(?offset_id=#{max_id.to_i + 1}) if max_id
+
+      form = form parent.parent.user
+
+      all_data = GuissoRestClient.new(connector, parent.parent.user).get(url)['sites']
+
+      events = all_data.map do |data|
+        output = process_data(data, form[:layers][:type][:members])
+        output['_id'] =  data['id']
+        output
+      end
+
+      return [] if events.empty?
+
+      max_id = events.max_by { |o| o["_id"] }["_id"]
+      save_state(max_id)
+      events
+    end
+
+    def process_data(data, layers, output = {})
+      output = output.merge(process_meta_data(data))
+      layers.each do |layer_id, fields|
+        if fields
+          fields[:type][:members].each do |field_id, field_value|
+            output[['layers', "#{layer_id}", "#{field_id}"]] = data['properties'][field_id] if data['properties']
+          end
+        end
+      end
+      output
+    end
+
+    def process_meta_data(data, output = {})
+      output["name"] = data["name"] if data["name"].present?
+      output["lat"] = data["lat"].to_f if data["lat"].present?
+      output["long"] = data["lng"].to_f if data["lng"].present?
+      output
+    end
+
+    def args(context)
+      form context.user
+    end
+
+    def form user
+      layers = GuissoRestClient.new(connector, user).get("#{connector.url}/api/v2/collections/#{parent.collection_id}/layers.json")
+      {
+        id: SimpleProperty.integer("ID"),
+        name: SimpleProperty.string("Name"),
+        lat: SimpleProperty.float("Latitude"),
+        long: SimpleProperty.float("Longitude"),
+        layers: {
+          label: "Layers",
+          type: {
+            kind: :struct,
+            members: Hash[layers.map do |layer|
+              [layer["id"].to_s, {
+                label: layer["name"],
+                type: {
+                  kind: :struct,
+                  members: Hash[
+                    (layer["fields"] || []).map do |field|
+                      [field["id"].to_s, parent.field_properties(field)]
+                    end
+                  ]
+                }
+              }]
+            end]
+          }
+        }
+      }
+    end
+  end
+
 end
