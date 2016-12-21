@@ -131,6 +131,7 @@ class ONAConnector < Connector
         output["_id"] = data["_id"]
         output
       end
+
       if events.empty?
         return []
       end
@@ -150,7 +151,8 @@ class ONAConnector < Connector
           value = data[data_path]
           if value
             lat, lon = value.split.map(&:to_f)
-            output[name] = {"lat" => lat, "lon" => lon}
+            output[[name, "lat"]] = lat
+            output[[name, "lon"]] = lon
           else
             output[name] = nil
           end
@@ -160,6 +162,12 @@ class ONAConnector < Connector
         when "repeat"
           value = Array(data[data_path])
           output[name] = value.map { |v| process_data(v, c["children"], "#{data_path}/") }
+        when "select all that apply"
+          output[name] = data[data_path].split(' ') if data[data_path]
+        when 'photo'
+          image_url = data['_attachments'].each do |attachment|
+            output[name] = "https://ona.io/#{attachment['download_url']}" if attachment['download_url'] && attachment['download_url'].include?(data[data_path])
+          end
         else
           output[name] = data[data_path]
         end
@@ -212,10 +220,11 @@ class ONAConnector < Connector
         when "repeat"
           members = type_children(form, c["children"])
           {type: {kind: :array, item_type: {kind: :struct, members: members}}}
-        when "note", "photo"
-          # skip
+        when "note", "photo", "acknowledge"
+          {type: :string}
         else
-          raise "Unsupported ONA type: #{c["type"]}"
+          # raise "Unsupported ONA type: #{c["type"]}"
+          {type: :string}
         end
 
         if type
