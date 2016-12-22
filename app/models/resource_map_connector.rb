@@ -229,6 +229,18 @@ class ResourceMapConnector < Connector
         else
           h[:type] = :integer
         end
+      when 'date'
+        h[:type] = :date
+      when 'yes_no'
+        h[:type] = :boolean
+      when 'photo'
+        h[:type] = :url
+      when 'user'
+        h[:type] = :email
+      when 'site', 'select_one', 'location', 'hierarchy' # location is nearby field
+        h[:type] = {kind: :enum, value_type: :string, members: []}
+      when 'select_many'
+        h[:type] = {kind: :array, item_type: {kind: :enum, value_type: :string, members: []}}
       # TODO: missing select one, select many and hierarchy fields
       else
         h[:type]= :string
