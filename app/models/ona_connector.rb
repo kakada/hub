@@ -220,8 +220,10 @@ class ONAConnector < Connector
         when "repeat"
           members = type_children(form, c["children"])
           {type: {kind: :array, item_type: {kind: :struct, members: members}}}
-        when "note", "photo", "acknowledge"
+        when "note", "acknowledge"
           {type: :string}
+        when 'photo'
+          {type: :url}
         else
           # raise "Unsupported ONA type: #{c["type"]}"
           {type: :string}
