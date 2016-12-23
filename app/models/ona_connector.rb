@@ -151,6 +151,7 @@ class ONAConnector < Connector
           value = data[data_path]
           if value
             lat, lon = value.split.map(&:to_f)
+            output[name] = {"lat" => lat, "lon" => lon}
             output[[name, "lat"]] = lat
             output[[name, "lon"]] = lon
           else
