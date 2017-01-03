@@ -338,6 +338,8 @@ class ResourceMapConnector < Connector
   class NewDataEvent
     include Event
 
+    attr_accessor :layers
+
     def initialize(parent)
       @parent = parent
     end
@@ -363,6 +365,8 @@ class ResourceMapConnector < Connector
 
       form = form parent.parent.user
 
+      self.layers = GuissoRestClient.new(connector, parent.parent.user).get("#{connector.url}/api/v2/collections/#{parent.collection_id}/fields.json")
+
       all_data = GuissoRestClient.new(connector, parent.parent.user).get(url)['sites']
 
       events = all_data.map do |data|
@@ -378,12 +382,13 @@ class ResourceMapConnector < Connector
       events
     end
 
-    def process_data(data, layers, output = {})
+    def process_data(data, form_layers, output = {})
       output = output.merge(process_meta_data(data))
-      layers.each do |layer_id, fields|
+      form_layers.each do |layer_id, fields|
         if fields
           fields[:type][:members].each do |field_id, field_value|
-            output[['layers', "#{layer_id}", "#{field_id}"]] = data['properties'][field_id] if data['properties']
+            value = field_value_of field_id, data
+            output[['layers', "#{layer_id}", "#{field_id}"]] = value if value
           end
         end
       end
@@ -395,6 +400,67 @@ class ResourceMapConnector < Connector
       output["lat"] = data["lat"].to_f if data["lat"].present?
       output["long"] = data["lng"].to_f if data["lng"].present?
       output
+    end
+
+    def field_value_of field_id, data
+      value = nil
+
+      if data['properties']
+        field = nil
+        layers.each do |layer|
+          layer['fields'].each do |f|
+            if f['id'] === field_id
+              field = f
+              break
+            end
+          end
+        end
+
+        if field
+          field_value = case field['kind']
+          when 'date'
+            begin
+              value = Date.strptime(data['properties'][field_id], "%Y-%m-%d") if data['properties'][field_id].present?
+            rescue
+              value = data['properties'][field_id]
+            end
+          when 'yes_no'
+            value = data['properties'][field_id] ? 'yes' : 'no'
+          when 'select_one'
+            field['config']['options'].each do |option|
+              if option['id'] === data['properties'][field_id]
+                value = option['code']
+                break
+              end
+            end
+          when 'select_many'
+            select_many = []
+            field['config']['options'].each do |option|
+              if data['properties'][field_id]
+                data['properties'][field_id].each do |v|
+                  select_many.push(option['code']) if option['id'] === v
+                end
+              end
+            end
+            value = select_many unless select_many.empty?
+          when 'photo'
+            value = "#{connector.url}/photo_field/#{data['properties'][field_id]}" if data['properties'][field_id].present?
+          when 'site'
+            if data['properties'][field_id]
+              begin
+                site = GuissoRestClient.new(connector, parent.parent.user).get("#{connector.url}/api/v2/sites/#{data['properties'][field_id]}.json?collection_id=#{parent.collection_id}")
+                value = site['id_with_prefix'] if site
+              rescue
+                value = "#{data['properties'][field_id]}(doesn't exist)"
+              end
+            end
+          else
+            value = data['properties'][field_id]
+          end
+        end
+      end
+
+      value
     end
 
     def args(context)
