@@ -206,6 +206,9 @@ class ResourceMapConnector < Connector
         layers.each do |layer_id, fields|
           if fields
             fields.each do |field_code, value|
+              if value.is_a?(String) && value.start_with?("[") && value.end_with?("]")
+                value = value.gsub!(/['"]/, '')[1, (value.length-2)].split(/, ?/)
+              end
               site_properties[field_code] = value
             end
           end
