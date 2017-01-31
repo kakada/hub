@@ -48,7 +48,11 @@ class EventHandler < ActiveRecord::Base
 
   def notify_event_unsubscribe
     context = RequestContext.new(user)
-    source_event = connector.lookup_path(event, context)
-    source_event.unsubscribe(context)
+    begin
+      source_event = connector.lookup_path(event, context)
+      source_event.unsubscribe(context)
+    rescue Exception => e
+      logger.warn e.message + " for connector #{connector_id}"
+    end
   end
 end
