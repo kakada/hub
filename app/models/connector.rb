@@ -106,15 +106,19 @@ class Connector < ActiveRecord::Base
         handlers_by_event.each do |(event_path, user), handlers|
           events = connector.lookup_path(event_path, RequestContext.new(user)).poll
           events.each do |event|
-            handlers.each do |handler|
-              begin
-                connector_url = connector.type.include?('Google') ? connector.type : connector.url
-                PoirotRails::Activity.start("polling_event", event: event, handler_id: handler.id, user_id: handler.user_id, connector_id: connector_id, handled_event: handler.event, url: connector_url) do
-                  handler.trigger event
+            begin
+              handlers.each do |handler|
+                begin
+                  connector_url = connector.type.include?('Google') ? connector.type : connector.url
+                  PoirotRails::Activity.start("polling_event", event: event, handler_id: handler.id, user_id: handler.user_id, connector_id: connector_id, handled_event: handler.event, url: connector_url) do
+                    handler.trigger event
+                  end
+                rescue
+                  next
                 end
-              rescue
-                next
               end
+            rescue
+              next
             end
           end
         end
