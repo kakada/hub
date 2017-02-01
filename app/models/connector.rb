@@ -114,11 +114,11 @@ class Connector < ActiveRecord::Base
                     handler.trigger event
                   end
                 rescue
-                  next
+                  # TODO handling exception here
                 end
               end
             rescue
-              next
+              # TODO handling exception here
             end
           end
         end

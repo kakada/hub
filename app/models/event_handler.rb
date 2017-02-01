@@ -12,7 +12,12 @@ class EventHandler < ActiveRecord::Base
     def self.perform
       connector_ids = EventHandler.where(poll: true).distinct.pluck(:connector_id)
       connector_ids.each do |connector_id|
-        Resque.enqueue_to(:hub, Connector::PollJob, connector_id)
+        begin
+          connector = Connector.find(connector_id)
+          Resque.enqueue_to(:hub, Connector::PollJob, connector.id)
+        rescue
+          # TODO handling exception here
+        end
       end
     end
   end
