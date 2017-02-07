@@ -388,10 +388,11 @@ class ResourceMapConnector < Connector
     def process_data(data, form_layers, output = {})
       output = output.merge(process_meta_data(data))
       form_layers.each do |layer_id, fields|
+        output['layers'][layer_id.to_s] = {}
         if fields
           fields[:type][:members].each do |field_id, field_value|
             value = field_value_of field_id, data
-            output[['layers', "#{layer_id}", "#{field_id}"]] = value if value
+            output['layers'][layer_id.to_s][field_id.to_s] = value if value
           end
         end
       end
@@ -402,6 +403,7 @@ class ResourceMapConnector < Connector
       output["name"] = data["name"] if data["name"].present?
       output["lat"] = data["lat"].to_f if data["lat"].present?
       output["long"] = data["lng"].to_f if data["lng"].present?
+      output['layers'] = {}
       output
     end
 

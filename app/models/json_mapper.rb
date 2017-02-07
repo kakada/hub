@@ -16,11 +16,10 @@ class JsonMapper
     if mapping.is_a?(String)
       context[mapping]
     elsif mapping.is_a?(Array)
-      value = nil
       mapping.each do |key|
-        value = context[key] || {}
+        context = context[key] || {}
       end
-      value.is_a?(Hash) ? (value.empty? ? context[mapping] : value) : value
+      context
     else
       case mapping["type"]
       when "struct"
