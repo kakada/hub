@@ -1,4 +1,4 @@
-class DHISConnector < Connector
+class DHIS229Connector < Connector
   include Entity
 
   store_accessor :settings, :url, :username, :password
@@ -7,7 +7,7 @@ class DHISConnector < Connector
   after_initialize :initialize_defaults, :if => :new_record?
 
   def human_type
-    "DHIS"
+    "DHIS229"
   end
 
   def has_events?
@@ -89,7 +89,7 @@ class DHISConnector < Connector
     end
 
     def label(user = nil)
-      @label ||= data_set(user || @user)["name"]
+      @label ||= data_set(user || @user)["name"] || data_set(user || @user)["displayName"]
     end
 
     def properties(context)
@@ -187,11 +187,13 @@ class DHISConnector < Connector
     private
 
     def form_uri
-      URI.join(connector.url, "api/dataSets/#{@parent.id}/form.json")
+      # manual select orgUnit as ZapUJY1aX5r to complement the requirement of DHIS2 v2.29
+      URI.join(connector.url, "api/dataSets/#{@parent.id}/form.json?ou=ZapUJY1aX5r")
     end
 
     def data_submission_uri
-      URI.join(connector.url, 'api/dataValueSets.json')
+      # for /api/26/dataValueSets, please visit https://docs.dhis2.org/2.29/en/developer/html/dhis2_developer_manual_full.html#webapi_sending_data_values
+      URI.join(connector.url, 'api/26/dataValueSets.json')
     end
   end
 
