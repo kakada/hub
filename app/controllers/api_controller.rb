@@ -152,7 +152,11 @@ class ApiController < ApplicationController
 
     subscribed_events = current_user.event_handlers.where(name: task_name)
     subscribed_events.each do |event_handler|
-      event_handler.trigger(body)
+      begin
+        event_handler.trigger(body)
+      rescue Exception => e
+        logger.warn e.message + " for event handler #{event_handler.id}" + " with body #{body}"
+      end
     end
   end
 end
